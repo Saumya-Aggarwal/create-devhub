@@ -1,0 +1,57 @@
+{
+  "name": "create-devhub",
+  "version": "1.0.0",
+  "description": "A CLI tool to quickly scaffold Turborepo monorepos with Next.js/Vite, APIs, WebSockets, and Tailwind CSS",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/create-devhub.git"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/create-devhub#readme",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/create-devhub/issues"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsc && node scripts/add-shebang.ts",
+    "prepare": "npm run build",
+    "test": "node dist/bin/index.js --help"
+  },
+
+  "keywords": [
+    "turborepo",
+    "monorepo",
+    "nextjs",
+    "vite",
+    "react",
+    "tailwindcss",
+    "cli",
+    "scaffold",
+    "template",
+    "typescript",
+    "express",
+    "fastify",
+    "websocket"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "execa": "^9.6.0",
+    "fs-extra": "^11.3.0",
+    "prompts": "^2.4.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@types/prompts": "^2.4.9"
+  },
+   "bin": {
+    "create-devhub": "dist/bin/index.js"
+  }
+}

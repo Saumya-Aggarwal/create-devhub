@@ -1,0 +1,22 @@
+{
+  "name": "ws-server",
+  "version": "1.0.0",
+  "description": "WebSocket server for real-time communication",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  },  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/node": "^20.8.0",
+    "@types/ws": "^8.5.8",
+    "tsx": "^4.6.2",
+    "typescript": "^5.2.2"
+  }
+}
