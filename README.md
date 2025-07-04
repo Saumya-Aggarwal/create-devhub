@@ -1,5 +1,9 @@
 # create-devhub
 
+[![npm version](https://badge.fury.io/js/create-devhub.svg)](https://badge.fury.io/js/create-devhub)
+[![GitHub](https://img.shields.io/github/license/Saumya-Aggarwal/create-devhub)](https://github.com/Saumya-Aggarwal/create-devhub/blob/main/LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/create-devhub)](https://www.npmjs.com/package/create-devhub)
+
 🚀 **The fastest way to create production-ready Turborepo monorepos with modern web stack**
 
 Create feature-rich monorepos in seconds with Next.js/Vite, APIs, WebSockets, and Tailwind CSS - all perfectly configured and ready to go!
