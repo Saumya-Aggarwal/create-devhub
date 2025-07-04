@@ -1,9 +1,40 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
+build/
+
+# Logs
 *.log
-.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
 .env
+.env.local
+.env.production
+
+# npm pack files
 *.tgz
+
+# IDE/Editor files
 .vscode/settings.json
 .idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage reports
 coverage/
+.nyc_output
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
