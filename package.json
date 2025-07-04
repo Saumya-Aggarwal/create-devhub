@@ -1,6 +1,6 @@
 {
   "name": "create-devhub",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A CLI tool to quickly scaffold Turborepo monorepos with Next.js/Vite, APIs, WebSockets, and Tailwind CSS",
   "main": "index.js",
   "repository": {
@@ -20,7 +20,6 @@
     "prepare": "npm run build",
     "test": "node dist/bin/index.js --help"
   },
-
   "keywords": [
     "turborepo",
     "monorepo",
@@ -51,7 +50,7 @@
   "devDependencies": {
     "@types/prompts": "^2.4.9"
   },
-   "bin": {
+  "bin": {
     "create-devhub": "dist/bin/index.js"
   }
 }
