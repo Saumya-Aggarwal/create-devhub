@@ -5,11 +5,11 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/create-devhub.git"
+    "url": "https://github.com/Saumya-Aggarwal/create-devhub.git"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/create-devhub#readme",
+  "homepage": "https://github.com/Saumya-Aggarwal/create-devhub#readme",
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/create-devhub/issues"
+    "url": "https://github.com/Saumya-Aggarwal/create-devhub/issues"
   },
   "files": [
     "dist",
