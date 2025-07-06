@@ -37,38 +37,32 @@ export async function getAvailablePackageManagers(): Promise<Array<{title: strin
 
 // Helper function to customize default apps
 export async function customizeApps(opts: UserOptions) {
-  console.log("🔧 Customizing apps based on your choices...");
-  
   // Handle frontend choice
   if (opts.frontend === "web-vite") {
     // Remove default Next.js web app
-    console.log("  → Removing default Next.js web app");
     await fs.remove("apps/web");
     
     // Create Vite app using official create-vite
-    console.log("  → Creating Vite + React app with create-vite");
     await execa("npx", [
       "create-vite@latest", 
       "apps/web", 
       "--template", 
       "react-ts"
-    ], { stdio: "inherit" });
+    ], { stdio: "pipe" });
   }
   
   // Handle docs choice
   if (!opts.includeDocs) {
-    console.log("  → Removing docs app (not needed)");
     await fs.remove("apps/docs");
   }
 }
 
 // Helper function to add custom apps
 export async function addCustomApps(opts: UserOptions) {
-  console.log("🚀 Adding additional apps... \n");
+  if (!opts.httpServer && !opts.includeWS) return;
   
   // Add HTTP server if requested
   if (opts.httpServer) {
-    console.log(`  → Adding ${opts.httpServer} server`);
     const serverTemplatePath = path.join(__dirname, "..", "..", "templates", opts.httpServer);
     await fs.copy(serverTemplatePath, "apps/http-server");
     // Fix local workspace dependency for correct package manager
@@ -88,7 +82,6 @@ export async function addCustomApps(opts: UserOptions) {
 
   // Add WebSocket server if requested
   if (opts.includeWS) {
-    console.log("  → Adding WebSocket server");
     const wsTemplatePath = path.join(__dirname, "..", "..", "templates", "ws-server");
     await fs.copy(wsTemplatePath, "apps/ws-server");
     // Fix local workspace dependency for correct package manager
@@ -108,9 +101,7 @@ export async function addCustomApps(opts: UserOptions) {
 }
 
 // Function to update turbo.json for custom apps
-export async function updateTurboConfig(opts: UserOptions) {
-  console.log("🔧 Updating Turbo configuration...");
-  
+export async function updateTurboConfig(opts: UserOptions) {  
   const turboConfigPath = "turbo.json";
   if (await fs.pathExists(turboConfigPath)) {
     const turboConfig = await fs.readJson(turboConfigPath);
@@ -136,26 +127,18 @@ export async function updateTurboConfig(opts: UserOptions) {
     
     // Add tasks for custom apps if they exist
     if (opts.httpServer) {
-      console.log("  → Adding HTTP server to Turbo config");
       // Ensure the app is included in build and dev tasks
       if (turboConfig.tasks.dev) {
         turboConfig.tasks.dev.cache = false; // Dev tasks shouldn't cache
       }
     }
     
-    if (opts.includeWS) {
-      console.log("  → Adding WebSocket server to Turbo config");
-    }
-    
     await fs.writeJson(turboConfigPath, turboConfig, { spaces: 2 });
-    console.log("✅ Turbo configuration updated!");
   }
 }
 
 // Function to update workspace package.json
 export async function updateWorkspacePackageJson() {
-  console.log("🔧 Updating workspace package.json...");
-  
   const packageJsonPath = "package.json";
   if (await fs.pathExists(packageJsonPath)) {
     const packageJson = await fs.readJson(packageJsonPath);
@@ -175,14 +158,11 @@ export async function updateWorkspacePackageJson() {
     }
     
     await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
-    console.log("✅ Workspace package.json updated!");
   }
 }
 
 // Function to fix TypeScript config package for pnpm compatibility
 export async function fixTypeScriptConfigPackage() {
-  console.log(`🔧 Fixing TypeScript config package for compatibility...`);
-  
   const tsConfigPackageJsonPath = "packages/typescript-config/package.json";
   if (await fs.pathExists(tsConfigPackageJsonPath)) {
     const tsConfigPackageJson = await fs.readJson(tsConfigPackageJsonPath);
@@ -202,7 +182,6 @@ export async function fixTypeScriptConfigPackage() {
     ];
     
     await fs.writeJson(tsConfigPackageJsonPath, tsConfigPackageJson, { spaces: 2 });
-    console.log("✅ TypeScript config package fixed!");
   }
 }
 
@@ -210,11 +189,8 @@ export async function fixTypeScriptConfigPackage() {
 export async function configureDocsPort(opts: UserOptions) {
   if (!opts.includeDocs) return;
   
-  console.log("🔧 Configuring docs app port...");
-  
   const docsPackageJsonPath = "apps/docs/package.json";
   if (await fs.pathExists(docsPackageJsonPath)) {
-    console.log("  → Setting docs dev port to 3002");
     const docsPackageJson = await fs.readJson(docsPackageJsonPath);
     
     // Update dev script to use port 3002 to avoid conflicts
@@ -228,14 +204,11 @@ export async function configureDocsPort(opts: UserOptions) {
     }
     
     await fs.writeJson(docsPackageJsonPath, docsPackageJson, { spaces: 2 });
-    console.log("✅ Docs port configured to 3002!");
   }
 }
 
 // Function to configure all app ports to avoid conflicts
 export async function configureAllAppPorts(opts: UserOptions) {
-  console.log("🔧 Configuring app ports to avoid conflicts...");
-  
   // Configure docs port if included
   if (opts.includeDocs) {
     await configureDocsPort(opts);
@@ -245,7 +218,6 @@ export async function configureAllAppPorts(opts: UserOptions) {
   if (opts.httpServer) {
     const httpServerPackageJsonPath = "apps/http-server/package.json";
     if (await fs.pathExists(httpServerPackageJsonPath)) {
-      console.log("  → Setting HTTP server port to 8000");
       const httpPackageJson = await fs.readJson(httpServerPackageJsonPath);
       
       // Update the source file to use port 8000
@@ -265,7 +237,6 @@ export async function configureAllAppPorts(opts: UserOptions) {
   if (opts.includeWS) {
     const wsServerIndexPath = "apps/ws-server/src/index.ts";
     if (await fs.pathExists(wsServerIndexPath)) {
-      console.log("  → Setting WebSocket server port to 8080");
       let wsContent = await fs.readFile(wsServerIndexPath, 'utf-8');
       wsContent = wsContent.replace(
         /const PORT = process\.env\.PORT \? parseInt\(process\.env\.PORT\) : \d+;/,
@@ -274,29 +245,14 @@ export async function configureAllAppPorts(opts: UserOptions) {
       await fs.writeFile(wsServerIndexPath, wsContent);
     }
   }
-  
-  console.log("✅ All app ports configured!");
-  console.log("   → Web: http://localhost:3000");
-  if (opts.includeDocs) {
-    console.log("   → Docs: http://localhost:3002");
-  }
-  if (opts.httpServer) {
-    console.log("   → API: http://localhost:8000");
-  }
-  if (opts.includeWS) {
-    console.log("   → WebSocket: ws://localhost:8080");
-  }
 }
 
 // Function to setup Tailwind CSS with shared configuration
 export async function setupTailwindCSS(opts: UserOptions) {
-  console.log("🎨 Setting up Tailwind CSS with shared configuration...");
-  
   // 1. Create packages directory if it doesn't exist
   await fs.ensureDir("packages");
   
   // 2. Create shared Tailwind config package
-  console.log("  → Creating shared Tailwind configuration package");
   const tailwindConfigDir = "packages/tailwind-config";
   await fs.ensureDir(tailwindConfigDir);
   
@@ -486,7 +442,6 @@ export default config;`;
   );
   
   // 3. Configure apps to use shared Tailwind config
-  console.log("  → Configuring apps to use shared Tailwind configuration");
   
   // Configure web app
   const webAppPath = "apps/web";
@@ -500,7 +455,6 @@ export default config;`;
   }
   
   // 4. Add Tailwind dependencies to workspace
-  console.log("  → Adding Tailwind CSS dependencies to workspace");
   const workspacePackageJsonPath = "package.json";
   if (await fs.pathExists(workspacePackageJsonPath)) {
     const workspacePackageJson = await fs.readJson(workspacePackageJsonPath);
@@ -521,7 +475,6 @@ export default config;`;
   }
   
   // 5. Create shared UI package with Tailwind-ready components
-  console.log("  → Creating shared UI package with Tailwind components");
   const uiPackageTemplatePath = path.join(__dirname, "..", "..", "templates", "ui-package");
   await fs.copy(uiPackageTemplatePath, "packages/ui");
   
@@ -542,14 +495,7 @@ export default config;`;
   const uiTsConfigPath = "packages/ui/tsconfig.json";
   if (await fs.pathExists(uiTsConfigPath)) {
     // Keep the standalone TypeScript config to avoid dependency issues
-    console.log("  → Using standalone TypeScript configuration for UI package");
   }
-  
-  console.log("✅ Tailwind CSS setup complete!");
-  console.log("   → Shared configuration created in packages/tailwind-config");
-  console.log("   → Shared UI package created in packages/ui");
-  console.log("   → All apps configured to use shared Tailwind config");
-  console.log("   → CSS utility classes will work across all apps");
 }
 
 // Helper function to configure Tailwind for a specific app
@@ -889,5 +835,77 @@ ${existingCSS}`;
         await fs.writeFile(indexCSSPath, tailwindDirectives);
       }
     }
+  }
+}
+
+// Function to create beautiful landing pages
+export async function createLandingPages(opts: UserOptions) {
+  const landingPagesDir = path.join(__dirname, "..", "..", "templates", "landing-pages");
+  
+  // Helper to apply landing page to a Next.js app (web or docs)
+  async function applyNextLanding(appPath: string) {
+    const nextPageContent = await fs.readFile(path.join(landingPagesDir, "nextjs-page.tsx"), 'utf-8');
+    const appRouterPath = path.join(appPath, "app");
+    const pagesRouterPath = path.join(appPath, "pages");
+    if (await fs.pathExists(appRouterPath)) {
+      await fs.writeFile(path.join(appRouterPath, "page.tsx"), nextPageContent);
+    } else if (await fs.pathExists(pagesRouterPath)) {
+      await fs.writeFile(path.join(pagesRouterPath, "index.tsx"), nextPageContent);
+    } else {
+      await fs.ensureDir(appRouterPath);
+      await fs.writeFile(path.join(appRouterPath, "page.tsx"), nextPageContent);
+      const layoutContent = `import "./globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "DevHub - Modern Monorepo",
+  description: "Built with create-devhub",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className={inter.className}>{children}</body>
+    </html>
+  );
+}`;
+      await fs.writeFile(path.join(appRouterPath, "layout.tsx"), layoutContent);
+    }
+  }
+
+  // Web app landing page
+  const webAppPath = "apps/web";
+  if (await fs.pathExists(webAppPath)) {
+    if (opts.frontend === "web-next") {
+      await applyNextLanding(webAppPath);
+    } else if (opts.frontend === "web-vite") {
+      const viteAppContent = await fs.readFile(path.join(landingPagesDir, "vite-app.tsx"), 'utf-8');
+      const viteCSSContent = await fs.readFile(path.join(landingPagesDir, "vite-index.css"), 'utf-8');
+      await fs.writeFile(path.join(webAppPath, "src", "App.tsx"), viteAppContent);
+      await fs.writeFile(path.join(webAppPath, "src", "index.css"), viteCSSContent);
+      const mainContent = `import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)`;
+      await fs.writeFile(path.join(webAppPath, "src", "main.tsx"), mainContent);
+    }
+  }
+
+  // Docs app landing page (always Next.js)
+  if (opts.includeDocs && await fs.pathExists("apps/docs")) {
+    await applyNextLanding("apps/docs");
   }
 }

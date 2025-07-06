@@ -1,6 +1,6 @@
 {
   "name": "create-devhub",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A CLI tool to quickly scaffold Turborepo monorepos with Next.js/Vite, APIs, WebSockets, and Tailwind CSS",
   "main": "index.js",
   "repository": {

@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222.2 84% 4.9%;
+  --foreground: 236 13% 93%;
+  --card: 32 11% 15%;
+  --card-foreground: 236 13% 93%;
+  --popover: 32 11% 15%;
+  --popover-foreground: 236 13% 93%;
+  --primary: 199 100% 65%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 42 4% 18%;
+  --secondary-foreground: 236 13% 93%;
+  --muted: 42 4% 18%;
+  --muted-foreground: 210 5% 75%;
+  --accent: 99 63% 64%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 42 4% 18%;
+  --input: 42 4% 18%;
+  --ring: 199 100% 65%;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background: linear-gradient(135deg, #1F2023 0%, #121317 100%);
+  color: #ECEFF4;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  min-height: 100vh;
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+  max-width: 1200px;
+}
+
+/* Custom gradient for radial */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-from), var(--tw-gradient-to));
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2A2C30;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3C3F46;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4FD1FF;
+}
+
+/* Hover effects */
+.hover\:shadow-\[#4FD1FF\]\/25:hover {
+  box-shadow: 0 20px 25px -5px rgb(79 209 255 / 0.25), 0 10px 10px -5px rgb(79 209 255 / 0.1);
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #4FD1FF;
+  outline-offset: 2px;
+}
+
+/* Animation for cards */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.hover\:-translate-y-1:hover {
+  transform: translateY(-4px);
+  transition: transform 0.2s ease-in-out;
+}
