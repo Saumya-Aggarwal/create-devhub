@@ -22,35 +22,61 @@ wss.on('connection', function connection(ws, request) {
 
   // Handle incoming messages
   ws.on('message', function message(data) {
-    try {
-      const parsedMessage = JSON.parse(data.toString());
-      console.log('📨 Received:', parsedMessage);
+    const messageStr = data.toString();
+    console.log('📨 Received:', messageStr);
 
-      // Echo the message back to sender
-      ws.send(JSON.stringify({
-        type: 'echo',
-        originalMessage: parsedMessage,
-        timestamp: new Date().toISOString()
-      }));
+    // Handle ping/pong
+    if (messageStr.toLowerCase() === 'ping') {
+      ws.send('pong');
+      console.log('🏓 Sent pong response');
+      return;
+    }
 
+    // Handle JSON messages
+    if (messageStr.startsWith('{')) {
+      try {
+        const parsedMessage = JSON.parse(messageStr);
+        console.log('📨 Parsed JSON:', parsedMessage);
+
+        // Echo the message back to sender
+        ws.send(JSON.stringify({
+          type: 'echo',
+          originalMessage: parsedMessage,
+          timestamp: new Date().toISOString()
+        }));
+
+        // Broadcast to all other clients
+        wss.clients.forEach(function each(client) {
+          if (client !== ws && client.readyState === 1) { // OPEN state
+            client.send(JSON.stringify({
+              type: 'broadcast',
+              message: parsedMessage,
+              timestamp: new Date().toISOString()
+            }));
+          }
+        });
+
+      } catch (error) {
+        console.error('❌ Error parsing JSON:', error);
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Invalid JSON format',
+          timestamp: new Date().toISOString()
+        }));
+      }
+    } else {
+      // Handle simple text messages
+      console.log('📝 Text message:', messageStr);
+      
+      // Echo back with confirmation
+      ws.send(`Echo: ${messageStr}`);
+      
       // Broadcast to all other clients
       wss.clients.forEach(function each(client) {
         if (client !== ws && client.readyState === 1) { // OPEN state
-          client.send(JSON.stringify({
-            type: 'broadcast',
-            message: parsedMessage,
-            timestamp: new Date().toISOString()
-          }));
+          client.send(`User says: ${messageStr}`);
         }
       });
-
-    } catch (error) {
-      console.error('❌ Error parsing message:', error);
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Invalid JSON format',
-        timestamp: new Date().toISOString()
-      }));
     }
   });
 

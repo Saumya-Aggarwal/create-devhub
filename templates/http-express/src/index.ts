@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 const app = express();
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8000;
 
 // Middleware
 app.use(helmet()); // Security headers
@@ -31,6 +31,27 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
+app.get('/api/test', (req, res) => {
+  res.json({
+    message: '✅ API is working!',
+    timestamp: new Date().toISOString(),
+    method: 'GET',
+    status: 'success'
+  });
+});
+
+app.post('/api/test', (req, res) => {
+  const { message } = req.body;
+  res.json({
+    message: '✅ POST request received!',
+    receivedData: req.body,
+    echo: message || 'No message provided',
+    timestamp: new Date().toISOString(),
+    method: 'POST',
+    status: 'success'
+  });
+});
+
 app.get('/api/users', (req, res) => {
   res.json({
     users: [

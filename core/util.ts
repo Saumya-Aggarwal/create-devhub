@@ -841,6 +841,14 @@ ${existingCSS}`;
 // Function to create beautiful landing pages
 export async function createLandingPages(opts: UserOptions) {
   const landingPagesDir = path.join(__dirname, "..", "..", "templates", "landing-pages");
+  const dashboardDir = path.join(__dirname, "..", "..", "templates", "dashboard");
+  
+  // Copy dashboard to public folder for web apps
+  const copyDashboard = async (appPath: string) => {
+    const publicDir = path.join(appPath, "public");
+    await fs.ensureDir(publicDir);
+    await fs.copy(dashboardDir, path.join(publicDir, "dashboard"));
+  };
   
   // Helper to apply landing page to a Next.js app (web or docs)
   async function applyNextLanding(appPath: string) {
@@ -885,11 +893,13 @@ export default function RootLayout({
   if (await fs.pathExists(webAppPath)) {
     if (opts.frontend === "web-next") {
       await applyNextLanding(webAppPath);
+      await copyDashboard(webAppPath);
     } else if (opts.frontend === "web-vite") {
       const viteAppContent = await fs.readFile(path.join(landingPagesDir, "vite-app.tsx"), 'utf-8');
       const viteCSSContent = await fs.readFile(path.join(landingPagesDir, "vite-index.css"), 'utf-8');
       await fs.writeFile(path.join(webAppPath, "src", "App.tsx"), viteAppContent);
       await fs.writeFile(path.join(webAppPath, "src", "index.css"), viteCSSContent);
+      await copyDashboard(webAppPath);
       const mainContent = `import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
@@ -907,5 +917,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   // Docs app landing page (always Next.js)
   if (opts.includeDocs && await fs.pathExists("apps/docs")) {
     await applyNextLanding("apps/docs");
+    await copyDashboard("apps/docs");
   }
 }

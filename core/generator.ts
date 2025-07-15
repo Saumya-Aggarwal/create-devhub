@@ -1,6 +1,8 @@
 import { execa } from "execa";
 import path from "path";
 import fs from "fs-extra";
+import chalk from "chalk";
+import { createSpinner } from "./spinner.js";
 import { UserOptions } from "./prompts.js";
 import { customizeApps, addCustomApps, updateTurboConfig, updateWorkspacePackageJson, configureAllAppPorts, setupTailwindCSS, fixTypeScriptConfigPackage, createLandingPages } from "./util.js";
 
@@ -29,6 +31,8 @@ export async function runGenerator(userOptions: UserOptions) {
     ? opts.packageManager
     : "npm";
 
+  console.log(chalk.cyan('\n🚀 Creating your DevHub project...\n'));
+
   // 1. create and cd into the project directory
   const projectDir = path.resolve(process.cwd(), opts.projectName);
 
@@ -36,7 +40,7 @@ export async function runGenerator(userOptions: UserOptions) {
   if (await fs.pathExists(projectDir)) {
     const files = await fs.readdir(projectDir);
     if (files.length > 0) {
-      console.log(`❌ Directory '${opts.projectName}' already exists and is not empty.`);
+      console.log(chalk.red(`❌ Directory '${opts.projectName}' already exists and is not empty.`));
       console.log('Please choose a different project name or remove the existing directory.');
       process.exit(1);
     }
@@ -46,60 +50,132 @@ export async function runGenerator(userOptions: UserOptions) {
   process.chdir(projectDir);
   
   // 2. Bootstrap with the official turborepo starter
-  await execa(
-    "npx",
-    [
-      "create-turbo@latest",
-      ".",
-      "--package-manager",
-      pmFlag,
-      "--skip-install",
-    ],
-    { stdio: "pipe" }
-  );
+  const bootstrapSpinner = createSpinner('Bootstrapping Turborepo starter...').start();
+  try {
+    await execa(
+      "npx",
+      [
+        "create-turbo@latest",
+        ".",
+        "--package-manager",
+        pmFlag,
+        "--skip-install",
+      ],
+      { stdio: "pipe" }
+    );
+    bootstrapSpinner.succeed('Turborepo starter created');
+  } catch (error) {
+    bootstrapSpinner.fail('Failed to bootstrap Turborepo');
+    throw error;
+  }
 
   // 3) Modify or remove default apps based on user choices
-  await customizeApps(opts);
+  const customizeSpinner = createSpinner('Customizing project structure...').start();
+  try {
+    await customizeApps(opts);
+    customizeSpinner.succeed('Project structure customized');
+  } catch (error) {
+    customizeSpinner.fail('Failed to customize apps');
+    throw error;
+  }
   
   // 4) Configure all app ports to avoid conflicts
-  await configureAllAppPorts(opts);
+  const portsSpinner = createSpinner('Configuring service ports...').start();
+  try {
+    await configureAllAppPorts(opts);
+    portsSpinner.succeed('Service ports configured');
+  } catch (error) {
+    portsSpinner.fail('Failed to configure ports');
+    throw error;
+  }
   
   // 5) Add additional apps based on user choices
-  await addCustomApps(opts);
+  if (opts.httpServer || opts.includeWS) {
+    const appsSpinner = createSpinner('Adding server components...').start();
+    try {
+      await addCustomApps(opts);
+      appsSpinner.succeed('Server components added');
+    } catch (error) {
+      appsSpinner.fail('Failed to add server components');
+      throw error;
+    }
+  }
   
   // 6) Update Turbo configuration for new apps
-  await updateTurboConfig(opts);
+  const turboSpinner = createSpinner('Updating Turborepo configuration...').start();
+  try {
+    await updateTurboConfig(opts);
+    turboSpinner.succeed('Turborepo configuration updated');
+  } catch (error) {
+    turboSpinner.fail('Failed to update Turbo config');
+    throw error;
+  }
   
   // 7) Update workspace package.json for ES modules
-  await updateWorkspacePackageJson();
+  const workspaceSpinner = createSpinner('Updating workspace configuration...').start();
+  try {
+    await updateWorkspacePackageJson();
+    workspaceSpinner.succeed('Workspace configuration updated');
+  } catch (error) {
+    workspaceSpinner.fail('Failed to update workspace config');
+    throw error;
+  }
   
   // 8) Fix TypeScript config package for pnpm compatibility
-  await fixTypeScriptConfigPackage();
+  const tsSpinner = createSpinner('Fixing TypeScript configuration...').start();
+  try {
+    await fixTypeScriptConfigPackage();
+    tsSpinner.succeed('TypeScript configuration fixed');
+  } catch (error) {
+    tsSpinner.fail('Failed to fix TypeScript config');
+    throw error;
+  }
   
   // 9) Setup Tailwind CSS if requested
   if (opts.includeTailwind) {
-    await setupTailwindCSS(opts);
+    const tailwindSpinner = createSpinner('Setting up Tailwind CSS...').start();
+    try {
+      await setupTailwindCSS(opts);
+      tailwindSpinner.succeed('Tailwind CSS configured');
+    } catch (error) {
+      tailwindSpinner.fail('Failed to setup Tailwind CSS');
+      throw error;
+    }
   }
 
   // 10) Create beautiful landing pages
-  await createLandingPages(opts);
+  const landingSpinner = createSpinner('Creating landing pages...').start();
+  try {
+    await createLandingPages(opts);
+    landingSpinner.succeed('Landing pages created');
+  } catch (error) {
+    landingSpinner.fail('Failed to create landing pages');
+    throw error;
+  }
   
   // 11) Install dependencies:
-  console.log("📦 Installing dependencies...");
+  const workspaceCount = getWorkspaceCount(opts);
+  const installSpinner = createSpinner(`Installing dependencies (${workspaceCount} workspace projects)...`).start();
 
-  // First, clean any existing node_modules and lock files to force fresh install
-  await fs.remove("node_modules").catch(() => {}); // Ignore if doesn't exist
-  await fs.remove("package-lock.json").catch(() => {});
-  await fs.remove("yarn.lock").catch(() => {});
-  await fs.remove("pnpm-lock.yaml").catch(() => {});
+  try {
+    // First, clean any existing node_modules and lock files to force fresh install
+    await fs.remove("node_modules").catch(() => {}); // Ignore if doesn't exist
+    await fs.remove("package-lock.json").catch(() => {});
+    await fs.remove("yarn.lock").catch(() => {});
+    await fs.remove("pnpm-lock.yaml").catch(() => {});
 
-  // Install with workspace detection (suppress output)
-  if (pmFlag === "pnpm") {
-    await execa("pnpm", ["install", "--recursive"], { stdio: "pipe" });
-  } else if (pmFlag === "yarn") {
-    await execa("yarn", ["install"], { stdio: "pipe" });
-  } else {
-    await execa("npm", ["install"], { stdio: "pipe" });
+    // Install with workspace detection (suppress output)
+    if (pmFlag === "pnpm") {
+      await execa("pnpm", ["install", "--recursive"], { stdio: "pipe" });
+    } else if (pmFlag === "yarn") {
+      await execa("yarn", ["install"], { stdio: "pipe" });
+    } else {
+      await execa("npm", ["install"], { stdio: "pipe" });
+    }
+    installSpinner.succeed(`Dependencies installed successfully (${workspaceCount} packages)`);
+  } catch (error) {
+    installSpinner.fail('Failed to install dependencies');
+    throw error;
   }
 
   // Final success message with helpful instructions
@@ -147,7 +223,7 @@ export async function runGenerator(userOptions: UserOptions) {
   // Show port configuration
   console.log(`⚙️  Configuring development environment...`);
   console.log(`   • Ports assigned:`);
-  console.log(`     → Web:         http://localhost:3000`);
+  console.log(`     → Web:         ${opts.frontend === 'web-next' ? 'http://localhost:3000' : 'http://localhost:5173'}`);
   if (opts.includeDocs) {
     console.log(`     → Docs:        http://localhost:3002`);
   }
@@ -184,7 +260,7 @@ export async function runGenerator(userOptions: UserOptions) {
   console.log(`   ${pmFlag} run dev\n`);
   
   console.log(`🚀 Start building:`);
-  console.log(`   → Web App:        http://localhost:3000`);
+  console.log(`   → Web App:        ${opts.frontend === 'web-next' ? 'http://localhost:3000' : 'http://localhost:5173'}`);
   if (opts.includeDocs) {
     console.log(`   → Docs Site:      http://localhost:3002`);
   }

@@ -1,11 +1,123 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+
 export default function HomePage() {
+  const [services, setServices] = useState({
+    web: { status: 'checking', responseTime: null },
+    docs: { status: 'checking', responseTime: null },
+    api: { status: 'checking', responseTime: null },
+    ws: { status: 'checking', responseTime: null }
+  });
+
+  const checkService = async (serviceId: string, url: string, type: 'http' | 'websocket' = 'http') => {
+    try {
+      const startTime = Date.now();
+      
+      if (type === 'websocket') {
+        return new Promise((resolve, reject) => {
+          const ws = new WebSocket(url);
+          const timeout = setTimeout(() => {
+            ws.close();
+            reject(new Error('Timeout'));
+          }, 5000);
+          
+          ws.onopen = () => {
+            clearTimeout(timeout);
+            ws.close();
+            const responseTime = Date.now() - startTime;
+            setServices(prev => ({
+              ...prev,
+              [serviceId]: { status: 'running', responseTime }
+            }));
+            resolve(true);
+          };
+          
+          ws.onerror = () => {
+            clearTimeout(timeout);
+            setServices(prev => ({
+              ...prev,
+              [serviceId]: { status: 'stopped', responseTime: null }
+            }));
+            reject(new Error('Connection failed'));
+          };
+        });
+      } else {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        try {
+          await fetch(url, { 
+            method: 'HEAD',
+            mode: 'no-cors',
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          const responseTime = Date.now() - startTime;
+          setServices(prev => ({
+            ...prev,
+            [serviceId]: { status: 'running', responseTime }
+          }));
+        } catch (error: any) {
+          clearTimeout(timeoutId);
+          if (error.name === 'AbortError') {
+            setServices(prev => ({
+              ...prev,
+              [serviceId]: { status: 'stopped', responseTime: null }
+            }));
+          } else {
+            // CORS error usually means service is running
+            const responseTime = Date.now() - startTime;
+            setServices(prev => ({
+              ...prev,
+              [serviceId]: { status: 'running', responseTime }
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      setServices(prev => ({
+        ...prev,
+        [serviceId]: { status: 'stopped', responseTime: null }
+      }));
+    }
+  };
+
+  const checkAllServices = async () => {
+    await Promise.all([
+      checkService('web', 'http://localhost:3000'),
+      checkService('docs', 'http://localhost:3002'),
+      checkService('api', 'http://localhost:8000'),
+      checkService('ws', 'ws://localhost:8080', 'websocket')
+    ]);
+  };
+
+  useEffect(() => {
+    checkAllServices();
+    const interval = setInterval(checkAllServices, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   const handleDashboardClick = () => {
-    // In a real implementation, this would navigate to the dashboard
-    window.open('http://localhost:4000', '_blank');
+    // Open the dashboard in the public folder
+    window.open('/dashboard/index.html', '_blank');
   };
 
   const handleGitHubClick = () => {
     window.open('https://github.com/Saumya-Aggarwal/create-devhub', '_blank');
+  };
+
+  const getStatusDisplay = (service: any) => {
+    switch (service.status) {
+      case 'running':
+        return { text: 'Running', className: 'bg-green-500/20 text-green-400' };
+      case 'stopped':
+        return { text: 'Stopped', className: 'bg-red-500/20 text-red-400' };
+      case 'checking':
+        return { text: 'Checking...', className: 'bg-yellow-500/20 text-yellow-400' };
+      default:
+        return { text: 'Unknown', className: 'bg-gray-500/20 text-gray-400' };
+    }
   };
 
   return (
@@ -28,7 +140,7 @@ export default function HomePage() {
               onClick={handleDashboardClick}
               className="px-8 py-4 text-lg font-semibold bg-[#4FD1FF] text-white rounded-lg hover:bg-[#4FD1FF]/90 hover:shadow-lg hover:shadow-[#4FD1FF]/25 transition-all transform hover:scale-105"
             >
-              Try the Dev Dashboard
+              Open Dev Dashboard
             </button>
             <button 
               onClick={handleGitHubClick}
@@ -89,7 +201,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Mockup Section */}
+        {/* Dynamic Dashboard Preview */}
         <div className="mb-20">
           <div className="relative bg-gradient-radial from-[#2A2C30]/20 to-transparent rounded-2xl p-8">
             <div className="bg-[#1B1D21] border border-[#3C3F46] rounded-lg shadow-2xl max-w-4xl mx-auto">
@@ -97,23 +209,46 @@ export default function HomePage() {
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="ml-4 text-sm text-[#777]">DevHub Dashboard - localhost:4000</span>
+                <span className="ml-4 text-sm text-[#777]">DevHub Dashboard - Live Status</span>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-mono text-white mb-4">Service Status</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-mono text-white">Service Status</h3>
+                  <span className="text-xs text-[#777]">Auto-updating every 10s</span>
+                </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-[#2A2C30] rounded border border-[#3C3F46]">
                     <span className="text-[#ECEFF4]">Web App</span>
-                    <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-sm">Running</span>
+                    <span className={`px-2 py-1 rounded text-sm ${getStatusDisplay(services.web).className}`}>
+                      {getStatusDisplay(services.web).text}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-[#2A2C30] rounded border border-[#3C3F46]">
+                    <span className="text-[#ECEFF4]">Docs Site</span>
+                    <span className={`px-2 py-1 rounded text-sm ${getStatusDisplay(services.docs).className}`}>
+                      {getStatusDisplay(services.docs).text}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-[#2A2C30] rounded border border-[#3C3F46]">
                     <span className="text-[#ECEFF4]">API Server</span>
-                    <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-sm">Running</span>
+                    <span className={`px-2 py-1 rounded text-sm ${getStatusDisplay(services.api).className}`}>
+                      {getStatusDisplay(services.api).text}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-[#2A2C30] rounded border border-[#3C3F46]">
                     <span className="text-[#ECEFF4]">WebSocket</span>
-                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-sm">Starting</span>
+                    <span className={`px-2 py-1 rounded text-sm ${getStatusDisplay(services.ws).className}`}>
+                      {getStatusDisplay(services.ws).text}
+                    </span>
                   </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-[#3C3F46]">
+                  <button 
+                    onClick={handleDashboardClick}
+                    className="w-full px-4 py-2 bg-[#4FD1FF]/10 text-[#4FD1FF] border border-[#4FD1FF]/20 rounded hover:bg-[#4FD1FF]/20 transition-all text-sm"
+                  >
+                    Open Dashboard →
+                  </button>
                 </div>
               </div>
             </div>

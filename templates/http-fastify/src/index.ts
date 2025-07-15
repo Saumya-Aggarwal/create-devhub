@@ -6,7 +6,7 @@ const fastify = Fastify({
   logger: true // Simple logger instead of pino-pretty for now
 });
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8000;
 
 // Register plugins
 await fastify.register(cors, {
@@ -33,6 +33,27 @@ fastify.get('/health', async (request, reply) => {
 });
 
 // API routes
+fastify.get('/api/test', async (request, reply) => {
+  return {
+    message: '✅ API is working!',
+    timestamp: new Date().toISOString(),
+    method: 'GET',
+    status: 'success'
+  };
+});
+
+fastify.post('/api/test', async (request, reply) => {
+  const body = request.body as any;
+  return {
+    message: '✅ POST request received!',
+    receivedData: body,
+    echo: body?.message || 'No message provided',
+    timestamp: new Date().toISOString(),
+    method: 'POST',
+    status: 'success'
+  };
+});
+
 fastify.get('/api/users', async (request, reply) => {
   return {
     users: [
